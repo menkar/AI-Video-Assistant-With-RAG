@@ -23,10 +23,8 @@ def _configure_ffmpeg() -> str:
     return _ffmpeg_dir
 
 
-def _build_ydl_opts(output_path: str, player_client: list | None = None) -> dict:
-    """Build yt-dlp options for a specific player-client strategy."""
-    if player_client is None:
-        player_client = ["ios"]
+def _base_ydl_opts(output_path: str) -> dict:
+    """Common yt-dlp options shared by all strategies."""
     return {
         "format": "bestaudio/best",
         "outtmpl": output_path,
@@ -38,9 +36,6 @@ def _build_ydl_opts(output_path: str, player_client: list | None = None) -> dict
             }
         ],
         "ffmpeg_location": _configure_ffmpeg(),
-        "extractor_args": {
-            "youtube": {"player_client": player_client},
-        },
         "http_headers": {
             "User-Agent": (
                 "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
@@ -54,20 +49,36 @@ def _build_ydl_opts(output_path: str, player_client: list | None = None) -> dict
     }
 
 
-# Player-client strategies tried in order — ios/mweb usually bypass bot-check.
-_YDL_STRATEGIES = [
+def _build_ydl_opts(output_path: str, player_client: list | None = None) -> dict:
+    """Build yt-dlp options, optionally pinning a player client."""
+    opts = _base_ydl_opts(output_path)
+    if player_client:
+        opts["extractor_args"] = {"youtube": {"player_client": player_client}}
+    return opts
+
+
+# Strategies tried in order.
+# Strategy None = no override (yt-dlp picks the default client automatically).
+# Named clients are the officially supported values across yt-dlp >=2023.06.
+_YDL_STRATEGIES: list[list | None] = [
+    None,               # yt-dlp default — always valid regardless of version
     ["ios"],
-    ["mweb"],
+    ["android"],
+    ["web"],
+    ["web_embedded"],
     ["tv_embedded"],
-    ["web_creator", "web"],
-    ["default", "-android_vr"],   # original fallback
 ]
 
-_BOT_KEYWORDS = ("sign in", "bot", "confirm you", "cookies", "auth", "403")
+_ACTIONABLE_KEYWORDS = (
+    "sign in", "bot", "confirm you", "cookies", "auth", "403",
+    "no player clients",        # "No player clients have been requested"
+    "player client",
+    "private video",
+)
 
 
 def download_youtube_audio(url: str) -> str:
-    """Download YouTube audio, trying multiple player-client strategies."""
+    """Download YouTube audio, trying multiple strategies before giving up."""
     output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
     last_error: Exception | None = None
 
@@ -82,15 +93,18 @@ def download_youtube_audio(url: str) -> str:
                 return os.path.splitext(ydl.prepare_filename(info))[0] + ".wav"
         except Exception as exc:
             last_error = exc
-            print(f"yt-dlp strategy {clients} failed: {exc}")
+            print(f"yt-dlp strategy {clients!r} failed: {exc}")
 
-    # All strategies exhausted — give the user an actionable message.
+    # All strategies exhausted — surface a clear, actionable message.
     err_lower = str(last_error).lower()
-    if any(kw in err_lower for kw in _BOT_KEYWORDS):
+    if any(kw in err_lower for kw in _ACTIONABLE_KEYWORDS):
         raise RuntimeError(
-            "YouTube blocked this download — the server IP was flagged as a bot.\n\n"
-            "Quick fix: download the video/audio on your own computer, then use the "
-            "'Upload local file' option instead of pasting a YouTube URL."
+            "YouTube could not be downloaded from this server.\n\n"
+            "This usually happens because:\n"
+            "  • The server IP is flagged by YouTube as a bot, OR\n"
+            "  • The video requires sign-in / age verification.\n\n"
+            "Quick fix: download the video/audio on your own computer and upload it "
+            "using the 'Upload local file' option instead of pasting a YouTube URL."
         )
     raise last_error
 
