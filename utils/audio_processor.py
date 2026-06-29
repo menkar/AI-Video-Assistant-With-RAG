@@ -23,8 +23,10 @@ def _configure_ffmpeg() -> str:
     return _ffmpeg_dir
 
 
-def _build_ydl_opts(output_path: str) -> dict:
-    """Build yt-dlp options resilient to YouTube 403 / SABR blocking."""
+def _build_ydl_opts(output_path: str, player_client: list | None = None) -> dict:
+    """Build yt-dlp options for a specific player-client strategy."""
+    if player_client is None:
+        player_client = ["ios"]
     return {
         "format": "bestaudio/best",
         "outtmpl": output_path,
@@ -36,26 +38,61 @@ def _build_ydl_opts(output_path: str) -> dict:
             }
         ],
         "ffmpeg_location": _configure_ffmpeg(),
-        "js_runtimes": {"node": {}},
-        "remote_components": {"ejs:github"},
-        "extractor_args": {"youtube": {"player_client": ["default", "-android_vr"]}},
+        "extractor_args": {
+            "youtube": {"player_client": player_client},
+        },
+        "http_headers": {
+            "User-Agent": (
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
+                "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 "
+                "Mobile/15E148 Safari/604.1"
+            ),
+            "Accept-Language": "en-US,en;q=0.9",
+        },
         "noplaylist": True,
         "quiet": True,
     }
 
 
-def download_youtube_audio(url: str) -> str:
-    output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
-    ydl_opts = _build_ydl_opts(output_path)
+# Player-client strategies tried in order — ios/mweb usually bypass bot-check.
+_YDL_STRATEGIES = [
+    ["ios"],
+    ["mweb"],
+    ["tv_embedded"],
+    ["web_creator", "web"],
+    ["default", "-android_vr"],   # original fallback
+]
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        requested = info.get("requested_downloads") or []
-        if requested and requested[0].get("filepath"):
-            filename = requested[0]["filepath"]
-        else:
-            filename = os.path.splitext(ydl.prepare_filename(info))[0] + ".wav"
-    return filename
+_BOT_KEYWORDS = ("sign in", "bot", "confirm you", "cookies", "auth", "403")
+
+
+def download_youtube_audio(url: str) -> str:
+    """Download YouTube audio, trying multiple player-client strategies."""
+    output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
+    last_error: Exception | None = None
+
+    for clients in _YDL_STRATEGIES:
+        try:
+            ydl_opts = _build_ydl_opts(output_path, player_client=clients)
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+                requested = info.get("requested_downloads") or []
+                if requested and requested[0].get("filepath"):
+                    return requested[0]["filepath"]
+                return os.path.splitext(ydl.prepare_filename(info))[0] + ".wav"
+        except Exception as exc:
+            last_error = exc
+            print(f"yt-dlp strategy {clients} failed: {exc}")
+
+    # All strategies exhausted — give the user an actionable message.
+    err_lower = str(last_error).lower()
+    if any(kw in err_lower for kw in _BOT_KEYWORDS):
+        raise RuntimeError(
+            "YouTube blocked this download — the server IP was flagged as a bot.\n\n"
+            "Quick fix: download the video/audio on your own computer, then use the "
+            "'Upload local file' option instead of pasting a YouTube URL."
+        )
+    raise last_error
 
 
 def convert_to_wav(input_path: str) -> str:
