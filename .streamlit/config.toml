@@ -1,12 +1,18 @@
 # =============================================================================
-#  .streamlit/config.toml — Streamlit production config for Render
+#  .streamlit/config.toml — Streamlit production config for Render + local dev
 # =============================================================================
 
 [server]
-headless            = true
-enableCORS          = false
+headless             = true
+enableCORS           = false
 enableXsrfProtection = false
-maxUploadSize       = 500
+maxUploadSize        = 500
+# Disable the hot-reload file watcher.
+# Streamlit's watcher recursively imports every module it finds, including
+# transformers sub-models (e.g. zoedepth) that require torchvision — which is
+# not installed.  Disabling the watcher prevents that crash entirely and has
+# no effect on functionality (just no auto-reload on file save).
+fileWatcherType      = "none"
 
 [browser]
 gatherUsageStats = false

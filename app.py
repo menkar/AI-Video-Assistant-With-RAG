@@ -584,7 +584,15 @@ def run_pipeline_stepped(source: str, language: str, slot, bar) -> dict:
     states["extract"] = "done"
 
     _step("rag", 5, "Step 6/6 — Building RAG index…")
-    rag_chain = build_rag_chain(transcript)
+
+    def _embed_progress(done: int, total: int) -> None:
+        """Called after each embedding batch — updates the step card live."""
+        pct   = done / total if total else 1.0
+        label = f"Step 6/6 — Embedding {done}/{total} chunks…"
+        slot.markdown(_progress_html(states, label), unsafe_allow_html=True)
+        bar.progress(min((5 + pct) / total, 1.0))
+
+    rag_chain = build_rag_chain(transcript, progress_fn=_embed_progress)
     states["rag"] = "done"
 
     slot.markdown(_progress_html(states, "Analysis complete ✓"), unsafe_allow_html=True)
@@ -1118,7 +1126,23 @@ def main() -> None:
                     time.sleep(0.2)
                     st.rerun()
                 except Exception as exc:
-                    st.error(f"Pipeline failed: {exc}")
+                    err_msg = str(exc)
+                    # YouTube cloud-block: show a clear, friendly warning with next steps
+                    if any(kw in err_msg.lower() for kw in (
+                        "youtube could not be downloaded",
+                        "youtube blocked",
+                        "sign in to confirm",
+                        "upload local file",
+                    )):
+                        st.warning(
+                            "**YouTube download blocked by server**\n\n"
+                            + err_msg.strip()
+                            + "\n\n**Tip:** Switch the input type to **Upload local file** "
+                            "and upload your downloaded audio/video instead.",
+                            icon="⚠️",
+                        )
+                    else:
+                        st.error(f"Pipeline failed: {err_msg}")
                 finally:
                     st.session_state.is_processing = False
 

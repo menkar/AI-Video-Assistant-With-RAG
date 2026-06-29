@@ -54,8 +54,8 @@ def _build_rag_chain_from_retriever(retriever):
     return retrieve_and_format | prompt | llm | StrOutputParser()
 
 
-def build_rag_chain(transcript: str):
-    vector_store = build_vector_store(transcript)
+def build_rag_chain(transcript: str, progress_fn=None):
+    vector_store = build_vector_store(transcript, progress_fn=progress_fn)
     retriever = get_retriever(vector_store, k=4)
     return _build_rag_chain_from_retriever(retriever)
 
