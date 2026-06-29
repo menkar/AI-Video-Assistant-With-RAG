@@ -1,0 +1,215 @@
+# =============================================================================
+#  MenkarAI – AI Video Assistant with RAG
+#  .gitignore  —  Never commit secrets, caches, or generated artefacts
+# =============================================================================
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECRETS & CREDENTIALS  ← most important — never commit these
+# ─────────────────────────────────────────────────────────────────────────────
+.env
+.env.*
+*.env
+secrets.json
+secrets.yaml
+secrets.toml
+credentials.json
+api_keys.txt
+config_local.py
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PYTHON
+# ─────────────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.pyc
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+MANIFEST
+wheels/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env/
+.venv.bak/
+
+# Installer caches
+pip-log.txt
+pip-delete-this-directory.txt
+
+# mypy / pyright / pylance
+.mypy_cache/
+.dmypy.json
+dmypy.json
+pyrightconfig.json
+.pyright/
+
+# pytest / coverage
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+nosetests.xml
+*.cover
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AI / ML ARTEFACTS
+# ─────────────────────────────────────────────────────────────────────────────
+# Local Whisper model cache (can be gigabytes)
+*.pt
+*.bin
+*.safetensors
+*.ot
+model_cache/
+hf_cache/
+huggingface_cache/
+transformers_cache/
+torch_cache/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VECTOR DATABASE (ChromaDB)
+# ─────────────────────────────────────────────────────────────────────────────
+vector_db/
+chroma_db/
+chromadb/
+*.sqlite3
+*.sqlite
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AUDIO / VIDEO FILES  (downloaded or recorded — can be large)
+# ─────────────────────────────────────────────────────────────────────────────
+downloads/
+*.mp3
+*.mp4
+*.wav
+*.m4a
+*.ogg
+*.flac
+*.aac
+*.webm
+*.mkv
+*.avi
+*.mov
+*.opus
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GENERATED OUTPUT FILES
+# ─────────────────────────────────────────────────────────────────────────────
+*.pdf
+output/
+reports/
+exports/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LOGS & TEMPORARY FILES
+# ─────────────────────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+logs/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# OS-GENERATED FILES
+# ─────────────────────────────────────────────────────────────────────────────
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EDITORS & IDES
+# ─────────────────────────────────────────────────────────────────────────────
+# VS Code / Cursor
+.vscode/
+.cursor/
+*.code-workspace
+
+# JetBrains (PyCharm, IntelliJ, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Vim / Emacs
+*.swp
+*.swo
+\#*\#
+.emacs.desktop
+.emacs.desktop.lock
+.elc
+auto-save-list
+tramp
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NODE / FRONTEND (if added later)
+# ─────────────────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DOCKER (if containerised later)
+# ─────────────────────────────────────────────────────────────────────────────
+.dockerignore
+docker-compose.override.yml
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STREAMLIT
+# ─────────────────────────────────────────────────────────────────────────────
+.streamlit/secrets.toml
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MISC / PROJECT-SPECIFIC
+# ─────────────────────────────────────────────────────────────────────────────
+# Test audio chunks left over from processing
+*_chunk_*.wav
+*_chunk_*.mp3
+
+# Any local config overrides
+local_settings.py
+local_config.py
