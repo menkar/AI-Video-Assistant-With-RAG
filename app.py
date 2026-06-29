@@ -17,11 +17,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from core.extractor import extract_action_items, extract_key_decisions, extract_questions
-from core.rag_engine import ask_question, build_rag_chain
-from core.summarizer import generate_title, summarize
-from core.transcriber_with_sarvam import transcribe_all
-from utils.audio_processor import process_input
+# Heavy ML imports are intentionally deferred (lazy) and loaded only when the
+# pipeline actually runs. Loading torch/whisper/chromadb at module level would
+# cause Streamlit to timeout on low-RAM cloud hosts before rendering anything.
 
 st.set_page_config(
     page_title="MenkarAI",
@@ -557,6 +555,12 @@ def run_pipeline_stepped(source: str, language: str, slot, bar) -> dict:
         bar.progress(min(idx / total, 1.0))
 
     _step("audio", 0, "Step 1/6 — Processing audio…")
+    # ── Lazy imports: loaded here so the home page renders without touching torch/whisper
+    from utils.audio_processor import process_input
+    from core.transcriber_with_sarvam import transcribe_all
+    from core.summarizer import generate_title, summarize
+    from core.extractor import extract_action_items, extract_key_decisions, extract_questions
+    from core.rag_engine import build_rag_chain
     chunks = process_input(source)
     states["audio"] = "done"
 
@@ -1046,6 +1050,7 @@ def _render_results(result: dict) -> None:
         if sent and q.strip():
             try:
                 with st.spinner("Thinking…"):
+                    from core.rag_engine import ask_question
                     ans = ask_question(result["rag_chain"], q.strip())
                 st.session_state.chat_history.extend([
                     {"role": "user",      "content": q.strip()},

@@ -1,78 +1,48 @@
 # =============================================================================
-#  render.yaml — Render Infrastructure-as-Code Blueprint
-#  MenkarAI · AI Video Assistant with RAG
+#  render.yaml — Render Blueprint for MenkarAI
 #  https://render.com/docs/blueprint-spec
-# =============================================================================
 #
-#  IMPORTANT: Never add real API keys to this file.
-#  All secrets must be set manually in the Render Dashboard under
-#  Environment → Environment Variables.
-#
+#  IMPORTANT: Never add real API keys here.
+#  Set MISTRAL_API_KEY and SARVAM_API_KEY manually in
+#  Render Dashboard → Environment tab.
 # =============================================================================
 
 services:
   - type: web
-    name: menkarai-video-assistant
+    name: ai-video-assistant-with-rag
     runtime: python
-    region: oregon          # Change to: frankfurt, singapore, ohio as needed
+    region: oregon
 
-    # ── Resource Plan ────────────────────────────────────────────────────────
-    # Free tier (512 MB RAM) is NOT sufficient for PyTorch + Whisper.
-    # Use Starter ($7/mo, 512 MB) or Standard ($25/mo, 2 GB RAM) for ML workloads.
-    plan: starter
+    # Use 'free' for testing. Upgrade to 'starter' or 'standard' for
+    # reliable ML workloads (Whisper needs at least 512 MB RAM).
+    plan: free
 
-    # ── Build & Start ────────────────────────────────────────────────────────
-    # Install CPU-only PyTorch FIRST from PyTorch's own index (avoids the 2 GB
-    # CUDA wheel). Then install everything else from Requirements.txt.
+    # ── Build ─────────────────────────────────────────────────────────────────
+    # Install CPU-only PyTorch first (avoids the 2 GB CUDA wheel download),
+    # then install the rest of the requirements.
     buildCommand: >-
       pip install --upgrade pip &&
       pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu &&
       pip install -r Requirements.txt
+
+    # ── Start ─────────────────────────────────────────────────────────────────
     startCommand: "bash start.sh"
 
-    # ── Health Check ─────────────────────────────────────────────────────────
-    healthCheckPath: /
-
-    # ── Auto-deploy on git push ───────────────────────────────────────────────
-    autoDeploy: true
-
-    # ── Persistent Disk (optional but recommended) ───────────────────────────
-    # Prevents vector_db and downloads from resetting on every deploy/restart.
-    # Comment out if you want to stay on the free tier (no persistent disk).
-    disk:
-      name: menkarai-persistent-storage
-      mountPath: /data
-      sizeGB: 1
-
     # ── Environment Variables ─────────────────────────────────────────────────
-    # `sync: false` means these values MUST be entered manually in the
-    # Render Dashboard → Environment tab. They will never appear in this file.
     envVars:
-
-      # ── Required API Keys (set manually in Render Dashboard) ──────────────
+      # API keys — set values manually in Render Dashboard, never here
       - key: MISTRAL_API_KEY
-        sync: false          # Set in Render Dashboard — do NOT put value here
-
+        sync: false
       - key: SARVAM_API_KEY
-        sync: false          # Set in Render Dashboard — do NOT put value here
+        sync: false
 
-      # ── Whisper Model Size ─────────────────────────────────────────────────
-      # Use 'tiny' or 'base' in cloud to reduce memory and startup time.
-      # Upgrade to 'small' only if plan has >= 2 GB RAM.
+      # Whisper model: use 'tiny' on free/starter (low RAM)
       - key: WHISPER_MODEL
         value: tiny
 
-      # ── Sarvam STT Model ──────────────────────────────────────────────────
       - key: SARVAM_STT_MODEL
         value: saaras:v3
 
-      # ── Data directories (mapped to persistent disk) ───────────────────────
-      - key: DOWNLOAD_DIR
-        value: /data/downloads
-
-      - key: VECTOR_DB_DIR
-        value: /data/vector_db
-
-      # ── Python version ────────────────────────────────────────────────────
+      # Python version for the build environment
       - key: PYTHON_VERSION
         value: "3.11.9"
