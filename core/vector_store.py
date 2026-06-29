@@ -1,4 +1,5 @@
 import os
+import shutil
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
@@ -33,11 +34,18 @@ def get_embeddings():
         return HuggingFaceEmbeddings(
             model_name=EMBEDDING_MODEL,
             model_kwargs={"device": "cpu"},
+            encode_kwargs={"show_progress_bar": True, "batch_size": 32},
         )
 
 
 def build_vector_store(transcript: str) -> Chroma:
     print(f"Building vector store (cloud_mode={_CLOUD_MODE})")
+
+    # Remove any stale collection/lock files from a previous run.
+    # On Windows, leftover ChromaDB files can cause a silent hang.
+    if os.path.exists(CHROMA_DIR):
+        shutil.rmtree(CHROMA_DIR)
+    os.makedirs(CHROMA_DIR, exist_ok=True)
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
@@ -49,6 +57,7 @@ def build_vector_store(transcript: str) -> Chroma:
         for i, chunk in enumerate(chunks)
     ]
 
+    print(f"Embedding {len(docs)} chunks — this may take a minute on CPU…")
     embeddings = get_embeddings()
     vector_store = Chroma.from_documents(
         documents=docs,
@@ -56,6 +65,7 @@ def build_vector_store(transcript: str) -> Chroma:
         collection_name=COLLECTION_NAME,
         persist_directory=CHROMA_DIR,
     )
+    print("Vector store built successfully.")
     return vector_store
 
 

@@ -463,8 +463,9 @@ st.markdown(
 def _init_session_state() -> None:
     for key, default in {
         "pipeline_result": None,
-        "chat_history": [],
-        "source_label": "",
+        "chat_history":    [],
+        "source_label":    "",
+        "is_processing":   False,
     }.items():
         if key not in st.session_state:
             st.session_state[key] = default
@@ -948,14 +949,16 @@ def _render_home() -> tuple[str | None, str, str, bool]:
         )
 
         st.markdown('<p class="field-lbl">&nbsp;</p>', unsafe_allow_html=True)
-        run_clicked = st.button(
+        btn_slot = st.empty()
+        run_clicked = btn_slot.button(
             "▶  Run Analysis",
             type="primary",
             use_container_width=True,
+            disabled=st.session_state.get("is_processing", False),
         )
 
     st.markdown("</div>", unsafe_allow_html=True)   # close input-card
-    return source, source_label, language, run_clicked
+    return source, source_label, language, run_clicked, btn_slot
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1086,7 +1089,7 @@ def main() -> None:
         _render_results(result)
         return
 
-    source, source_label, language, run_clicked = _render_home()
+    source, source_label, language, run_clicked, btn_slot = _render_home()
 
     if run_clicked:
         if not source:
@@ -1096,8 +1099,17 @@ def main() -> None:
             if missing:
                 st.error(f"Missing env vars: {', '.join(missing)} — configure your .env (see bottom bar).")
             else:
+                # Grey out the button immediately — visible for the entire pipeline run
+                btn_slot.button(
+                    "⏳  Processing…",
+                    type="primary",
+                    use_container_width=True,
+                    disabled=True,
+                    key="_btn_disabled",
+                )
                 slot = st.empty()
                 bar  = st.progress(0)
+                st.session_state.is_processing = True
                 try:
                     result = run_pipeline_stepped(source, language, slot, bar)
                     st.session_state.pipeline_result = result
@@ -1107,6 +1119,8 @@ def main() -> None:
                     st.rerun()
                 except Exception as exc:
                     st.error(f"Pipeline failed: {exc}")
+                finally:
+                    st.session_state.is_processing = False
 
 
 if __name__ == "__main__":
