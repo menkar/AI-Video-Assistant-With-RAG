@@ -1,0 +1,73 @@
+# =============================================================================
+#  render.yaml — Render Infrastructure-as-Code Blueprint
+#  MenkarAI · AI Video Assistant with RAG
+#  https://render.com/docs/blueprint-spec
+# =============================================================================
+#
+#  IMPORTANT: Never add real API keys to this file.
+#  All secrets must be set manually in the Render Dashboard under
+#  Environment → Environment Variables.
+#
+# =============================================================================
+
+services:
+  - type: web
+    name: menkarai-video-assistant
+    runtime: python
+    region: oregon          # Change to: frankfurt, singapore, ohio as needed
+
+    # ── Resource Plan ────────────────────────────────────────────────────────
+    # Free tier (512 MB RAM) is NOT sufficient for PyTorch + Whisper.
+    # Use Starter ($7/mo, 512 MB) or Standard ($25/mo, 2 GB RAM) for ML workloads.
+    plan: starter
+
+    # ── Build & Start ────────────────────────────────────────────────────────
+    buildCommand: "pip install --upgrade pip && pip install -r Requirements.txt"
+    startCommand: "bash start.sh"
+
+    # ── Health Check ─────────────────────────────────────────────────────────
+    healthCheckPath: /
+
+    # ── Auto-deploy on git push ───────────────────────────────────────────────
+    autoDeploy: true
+
+    # ── Persistent Disk (optional but recommended) ───────────────────────────
+    # Prevents vector_db and downloads from resetting on every deploy/restart.
+    # Comment out if you want to stay on the free tier (no persistent disk).
+    disk:
+      name: menkarai-persistent-storage
+      mountPath: /data
+      sizeGB: 1
+
+    # ── Environment Variables ─────────────────────────────────────────────────
+    # `sync: false` means these values MUST be entered manually in the
+    # Render Dashboard → Environment tab. They will never appear in this file.
+    envVars:
+
+      # ── Required API Keys (set manually in Render Dashboard) ──────────────
+      - key: MISTRAL_API_KEY
+        sync: false          # Set in Render Dashboard — do NOT put value here
+
+      - key: SARVAM_API_KEY
+        sync: false          # Set in Render Dashboard — do NOT put value here
+
+      # ── Whisper Model Size ─────────────────────────────────────────────────
+      # Use 'tiny' or 'base' in cloud to reduce memory and startup time.
+      # Upgrade to 'small' only if plan has >= 2 GB RAM.
+      - key: WHISPER_MODEL
+        value: tiny
+
+      # ── Sarvam STT Model ──────────────────────────────────────────────────
+      - key: SARVAM_STT_MODEL
+        value: saaras:v3
+
+      # ── Data directories (mapped to persistent disk) ───────────────────────
+      - key: DOWNLOAD_DIR
+        value: /data/downloads
+
+      - key: VECTOR_DB_DIR
+        value: /data/vector_db
+
+      # ── Python version ────────────────────────────────────────────────────
+      - key: PYTHON_VERSION
+        value: "3.11.9"

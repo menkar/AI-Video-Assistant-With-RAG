@@ -1,0 +1,46 @@
+# =============================================================================
+#  .streamlit/config.toml — Streamlit server configuration for production
+#  Applied automatically when running: streamlit run app.py
+# =============================================================================
+
+[server]
+# Bind to all interfaces so Render's reverse proxy can reach the app
+address = "0.0.0.0"
+# Render injects $PORT at runtime; overridden by start.sh command-line flag
+port = 8501
+# Required for headless cloud deployment (disables browser auto-open)
+headless = true
+# Disable CORS checks — Render's proxy handles this
+enableCORS = false
+# Disable XSRF token (Render proxy manages request validation)
+enableXsrfProtection = false
+# Increase upload file size limit to 500 MB for large video files
+maxUploadSize = 500
+# Allow file upload without size warnings
+enableStaticServing = true
+
+[browser]
+# Do not send telemetry to Streamlit
+gatherUsageStats = false
+# Do not open a browser tab on the server side
+serverAddress = "0.0.0.0"
+serverPort = 8501
+
+[theme]
+# Match the app's professional dark-navy / blue colour palette
+primaryColor       = "#2563eb"
+backgroundColor    = "#f0f4f8"
+secondaryBackgroundColor = "#ffffff"
+textColor          = "#0f172a"
+font               = "sans serif"
+
+[logger]
+# Suppress Streamlit's own verbose logs in production
+level = "warning"
+messageFormat = "%(asctime)s %(levelname)s %(message)s"
+
+[runner]
+# Disable magic commands (keeps the app clean)
+magicEnabled = false
+# Post-script rerun is more stable in production
+postScriptGC = true

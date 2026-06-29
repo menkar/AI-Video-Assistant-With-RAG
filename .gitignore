@@ -204,6 +204,14 @@ docker-compose.override.yml
 .streamlit/secrets.toml
 
 # ─────────────────────────────────────────────────────────────────────────────
+# RENDER / DEPLOYMENT
+# ─────────────────────────────────────────────────────────────────────────────
+# Streamlit secrets file (if used — keep config.toml but NOT secrets.toml)
+.streamlit/secrets.toml
+# Render may write runtime files
+.render/
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MISC / PROJECT-SPECIFIC
 # ─────────────────────────────────────────────────────────────────────────────
 # Test audio chunks left over from processing
