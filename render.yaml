@@ -12,18 +12,12 @@ services:
     name: ai-video-assistant-with-rag
     runtime: python
     region: oregon
-
-    # Use 'free' for testing. Upgrade to 'starter' or 'standard' for
-    # reliable ML workloads (Whisper needs at least 512 MB RAM).
     plan: free
 
     # ── Build ─────────────────────────────────────────────────────────────────
-    # Install CPU-only PyTorch first (avoids the 2 GB CUDA wheel download),
-    # then install the rest of the requirements.
-    buildCommand: >-
-      pip install --upgrade pip &&
-      pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu &&
-      pip install -r Requirements.txt
+    # Uses requirements-cloud.txt which excludes torch/whisper/numba/llvmlite.
+    # This keeps the deployment under 512 MB RAM (free tier limit).
+    buildCommand: "pip install --upgrade pip && pip install -r requirements-cloud.txt"
 
     # ── Start ─────────────────────────────────────────────────────────────────
     startCommand: "bash start.sh"
@@ -36,13 +30,16 @@ services:
       - key: SARVAM_API_KEY
         sync: false
 
-      # Whisper model: use 'tiny' on free/starter (low RAM)
+      # Tells vector_store.py to use Mistral embeddings API instead of
+      # local HuggingFace sentence-transformers (saves ~400 MB RAM)
+      - key: RENDER
+        value: "true"
+
       - key: WHISPER_MODEL
         value: tiny
 
       - key: SARVAM_STT_MODEL
         value: saaras:v3
 
-      # Python version for the build environment
       - key: PYTHON_VERSION
         value: "3.11.9"

@@ -859,6 +859,16 @@ def _render_home() -> tuple[str | None, str, str, bool]:
         unsafe_allow_html=True,
     )
 
+    # ── Cloud-mode notice ────────────────────────────────────────────────────
+    if os.getenv("RENDER", "").lower() in ("1", "true", "yes"):
+        st.info(
+            "☁️ **Cloud mode** — This deployment uses Sarvam AI for transcription "
+            "(cloud API, no local model). Please select **Hinglish — Sarvam AI** "
+            "as the language. English/Whisper (local model) is not available on "
+            "this instance due to memory constraints.",
+            icon="ℹ️",
+        )
+
     # ── Feature cards (original text) ───────────────────────────────────────
     st.markdown(
         """
